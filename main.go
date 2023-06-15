@@ -60,20 +60,24 @@ func main() {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for time.Now().Before(goaway) {
-				Get()
+				if err := Get(); err != nil {
+					log.Println(err)
+					return
+				}
 			}
-			wg.Done()
 		}()
 	}
 	wg.Wait()
 }
 
-func Get() {
+func Get() error {
 	resp, err := cl.Get("https://localhost:8443")
 	if err != nil {
-		return
+		return err
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
+	return err
 }
