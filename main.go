@@ -15,8 +15,7 @@ import (
 
 var (
 	nonsense []byte
-	rt       *http3.RoundTripper
-	cl       *http.Client
+	certPool *x509.CertPool
 )
 
 func main() {
@@ -49,31 +48,35 @@ func main() {
 	}
 	go srv.ListenAndServe()
 
-	certPool := x509.NewCertPool()
+	certPool = x509.NewCertPool()
 	certPool.AddCert(rootCA)
-	rt = &http3.RoundTripper{TLSClientConfig: &tls.Config{RootCAs: certPool}}
-	defer rt.Close()
-	cl = &http.Client{Transport: rt}
 
-	goaway := time.Now().Add(20 * time.Second)
+	goaway := time.Now().Add(time.Minute)
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for time.Now().Before(goaway) {
-				Get()
+				if err := Get(); err != nil {
+					log.Println(err)
+					return
+				}
 			}
-			wg.Done()
 		}()
 	}
 	wg.Wait()
 }
 
-func Get() {
+func Get() error {
+	rt := &http3.RoundTripper{TLSClientConfig: &tls.Config{RootCAs: certPool}}
+	defer rt.Close()
+	cl := &http.Client{Transport: rt}
 	resp, err := cl.Get("https://localhost:8443")
 	if err != nil {
-		return
+		return err
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
+	return err
 }
