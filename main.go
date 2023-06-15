@@ -51,7 +51,7 @@ func main() {
 	certPool = x509.NewCertPool()
 	certPool.AddCert(rootCA)
 
-	goaway := time.Now().Add(time.Minute)
+	goaway := time.Now().Add(10 * time.Second)
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
@@ -70,7 +70,7 @@ func main() {
 
 func Get() error {
 	rt := &http3.RoundTripper{TLSClientConfig: &tls.Config{RootCAs: certPool}}
-	defer rt.Close()
+	//defer rt.Close()
 	cl := &http.Client{Transport: rt}
 	resp, err := cl.Get("https://localhost:8443")
 	if err != nil {
