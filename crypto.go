@@ -6,16 +6,11 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
-	"math"
 	"math/big"
 	"time"
 )
 
 func generateCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
-	sn, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-	if err != nil {
-		return nil, nil, err
-	}
 	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -23,7 +18,7 @@ func generateCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	now := time.Now()
 	caTemplate := &x509.Certificate{
 		Version:               3,
-		SerialNumber:          sn,
+		SerialNumber:          big.NewInt(1),
 		NotBefore:             now,
 		NotAfter:              now.Add(time.Hour),
 		BasicConstraintsValid: true,
@@ -42,10 +37,6 @@ func generateCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 }
 
 func generateCert(servername string, parent *x509.Certificate, priv *ecdsa.PrivateKey) (*x509.Certificate, ed25519.PrivateKey, error) {
-	sn, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-	if err != nil {
-		return nil, nil, err
-	}
 	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -53,7 +44,7 @@ func generateCert(servername string, parent *x509.Certificate, priv *ecdsa.Priva
 	now := time.Now()
 	caTemplate := &x509.Certificate{
 		Version:      3,
-		SerialNumber: sn,
+		SerialNumber: big.NewInt(2),
 		NotBefore:    now,
 		NotAfter:     now.Add(time.Hour),
 		DNSNames:     []string{servername},
