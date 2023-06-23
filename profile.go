@@ -7,14 +7,16 @@ import (
 	"runtime/pprof"
 )
 
-func saveProfile(filename string) {
+func saveProfile(profile, filename string) {
 	file, err := os.Create(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	runtime.GC()
-	if err = pprof.WriteHeapProfile(file); err != nil {
+	if profile == "heap" {
+		runtime.GC()
+	}
+	if err = pprof.Lookup(profile).WriteTo(file, 0); err != nil {
 		log.Fatal(err)
 	}
 }

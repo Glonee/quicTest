@@ -20,13 +20,14 @@ var (
 )
 
 func main() {
-	defer saveProfile("memprofile")
+	defer saveProfile("heap", "memprofile")
+	defer saveProfile("goroutine", "goprofile")
 
 	// Make up nonsense data
 	nonsense = make([]byte, 65536)
 	io.ReadFull(rand.Reader, nonsense)
 
-	//Generate certificate
+	// Generate certificate
 	rootCA, cakey, err := generateCA()
 	if err != nil {
 		log.Fatal(err)
@@ -36,6 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Set up server
 	tlsConf := &tls.Config{Certificates: []tls.Certificate{{
 		Certificate: [][]byte{cert.Raw},
 		PrivateKey:  certKey,
@@ -49,14 +51,17 @@ func main() {
 	}
 	go srv.ListenAndServe()
 
+	// Set up client
 	certPool := x509.NewCertPool()
 	certPool.AddCert(rootCA)
 	rt = &http3.RoundTripper{TLSClientConfig: &tls.Config{RootCAs: certPool}}
 	defer rt.Close()
 	cl = &http.Client{Transport: rt}
 
+	// Do some tests
 	goaway := time.Now().Add(20 * time.Second)
 	var wg sync.WaitGroup
+
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
